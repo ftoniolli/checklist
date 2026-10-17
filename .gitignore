@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+*.log
+backups/
+.DS_Store
+Thumbs.db

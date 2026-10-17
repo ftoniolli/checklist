@@ -1,0 +1,22 @@
+{
+  "name": "checklist",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Aplicativo de checklist e relatório técnico de máquinas e equipamentos agrícolas da ASCAD Agrotecnologia.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.0.1",
+    "happy-dom": "^15.11.7",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
+  }
+}
