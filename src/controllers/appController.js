@@ -24,6 +24,7 @@ let templateDraft = null
 let templateDraftHash = ''
 let reportHeader = null
 let reportSubmit = 'preview'
+let navCollapsed = false
 let queue = Promise.resolve()
 let objectUrls = []
 let snapshot = null
@@ -122,7 +123,7 @@ async function render() {
     templateDraft,
     reportHeader
   })
-  root.replaceChildren(appShell(route, { flash: visibleFlash, offline }, page))
+  root.replaceChildren(appShell(route, { flash: visibleFlash, offline, navCollapsed }, page))
   const inspectionForm = root.querySelector('[data-form="inspection"]')
   if (inspectionForm) syncInspectionForm(inspectionForm, snapshot)
   document.title = 'Checklist'
@@ -136,7 +137,10 @@ function parseHash(hash = location.hash) {
 }
 
 async function onClick(action) {
-  if (action.name === 'archive-machine') {
+  if (action.name === 'toggle-nav') {
+    navCollapsed = !navCollapsed
+    await render()
+  } else if (action.name === 'archive-machine') {
     if (!window.confirm('Arquivar esta máquina? O histórico de inspeções será mantido.')) return
     await repository.archiveMachine(action.id)
     notify('Máquina arquivada.')

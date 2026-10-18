@@ -28,19 +28,59 @@ const NAV = [
   ['dados', 'Dados', '#/dados']
 ]
 
+const ICONS = {
+  painel: 'M4 4h7v7H4zM13 4h7v4h-7zM13 12h7v8h-7zM4 15h7v5H4z',
+  maquinas: 'M3 16V8h10v8M13 11h4l4 3v2h-8M7 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z',
+  componentes: 'M8 3h8v6H8zM4 12h7v8H4zM13 14h7v6h-7z',
+  checklists: 'M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01',
+  testes: 'M4 19V5M4 19h16M8 16l3-4 3 2 4-6',
+  fotos: 'M4 7h4l2-2h4l2 2h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+  relatorio: 'M7 3h7l5 5v13H7zM14 3v5h5M9 13h6M9 17h6',
+  dados: 'M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zM4 7v5c0 1.7 3.6 3 8 3s8-1.3 8-3V7M4 12v5c0 1.7 3.6 3 8 3s8-1.3 8-3v-5',
+  menu: 'M4 5h16v14H4zM9 5v14'
+}
+
+function icon(name) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  svg.setAttribute('viewBox', '0 0 24 24')
+  svg.setAttribute('class', 'icon')
+  svg.setAttribute('aria-hidden', 'true')
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+  path.setAttribute('d', ICONS[name] || ICONS.painel)
+  path.setAttribute('fill', 'none')
+  path.setAttribute('stroke', 'currentColor')
+  path.setAttribute('stroke-width', '1.75')
+  path.setAttribute('stroke-linecap', 'round')
+  path.setAttribute('stroke-linejoin', 'round')
+  svg.append(path)
+  return svg
+}
+
 export function appShell(route, extras, content) {
-  return h('div', { class: 'shell' },
+  const collapsed = Boolean(extras.navCollapsed)
+  return h('div', { class: collapsed ? 'shell is-collapsed' : 'shell' },
+    h('div', { class: 'frost', 'aria-hidden': 'true' }),
     h('aside', { class: 'nav' },
-      h('p', { class: 'brand' }, 'Checklist'),
+      h('div', { class: 'brand' }, icon('checklists'), h('span', { class: 'brand-text' }, 'Checklist')),
       ...NAV.map(([name, label, href]) => h('a', {
         href,
+        title: label,
         class: route.parts[0] === name ? 'is-active' : '',
         'aria-current': route.parts[0] === name ? 'page' : null
-      }, label))
+      }, icon(name), h('span', { class: 'nav-label' }, label)))
     ),
     h('div', { class: 'workspace' },
       h('header', { class: 'topbar' },
-        h('div', { class: 'identity' }, h('strong', {}, 'Checklist'), h('span', {}, 'ASCAD Agrotecnologia')),
+        h('div', { class: 'topbar-start' },
+          h('button', {
+            type: 'button',
+            class: 'icon-button',
+            'data-action': 'toggle-nav',
+            'aria-expanded': collapsed ? 'false' : 'true',
+            'aria-label': collapsed ? 'Expandir menu' : 'Recolher menu'
+          }, icon('menu')),
+          h('div', { class: 'identity' }, h('strong', {}, 'Checklist'), h('span', {}, 'ASCAD Agrotecnologia'))
+        ),
         extras.offline ? h('span', { class: 'offline' }, 'Sem conexão') : null
       ),
       extras.flash ? h('p', { class: `flash flash-${extras.flash.type}`, role: 'status' }, extras.flash.text) : null,
@@ -85,21 +125,31 @@ function dashboardPage(snapshot) {
     ['nonconformities', 'Não conformidades abertas', dashboard.openNonconformities],
     ['tests', 'Testes operacionais realizados', dashboard.operationalTests]
   ]
+  const attention = cards.filter((card) => card[0] === 'pending' || card[0] === 'nonconformities')
+  const context = cards.filter((card) => card[0] !== 'pending' && card[0] !== 'nonconformities')
   return h('section', { class: 'screen' },
     h('header', { class: 'screen-head' },
-      h('h1', {}, 'Painel'),
-      h('p', {}, 'Inspeção técnica de máquinas e equipamentos agrícolas.')
+      h('div', { class: 'titles' },
+        h('h1', {}, 'Painel'),
+        h('p', { class: 'lede' }, 'Inspeção técnica de máquinas e equipamentos agrícolas.')
+      )
     ),
-    h('div', { class: 'stats' }, cards.map(([key, label, value]) => h('article', { class: 'stat' },
+    h('div', { class: 'stats stats-priority' }, attention.map(([key, label, value]) => h('article', {
+      class: value > 0 && key === 'nonconformities' ? 'stat is-danger' : 'stat'
+    },
       h('span', {}, label),
       h('strong', { 'data-stat': key }, String(value))
     ))),
     h('div', { class: 'quick' },
-      linkButton('Nova máquina', '#/maquinas/nova'),
       linkButton('Nova inspeção', '#/checklists'),
-      linkButton('Registrar fotografia', '#/fotos'),
-      linkButton('Gerar relatório', '#/relatorio')
+      linkButton('Nova máquina', '#/maquinas/nova', 'button secondary'),
+      linkButton('Registrar fotografia', '#/fotos', 'button secondary'),
+      linkButton('Gerar relatório', '#/relatorio', 'button ghost')
     ),
+    h('div', { class: 'stats' }, context.map(([key, label, value]) => h('article', { class: 'stat' },
+      h('span', {}, label),
+      h('strong', { 'data-stat': key }, String(value))
+    ))),
     h('section', { class: 'card' },
       h('h2', {}, 'Últimas atividades'),
       dashboard.activities.length
@@ -117,8 +167,10 @@ function machineListPage(snapshot, query) {
       h('h1', {}, 'Máquinas'),
       linkButton('Nova máquina', '#/maquinas/nova')
     ),
-    field('Buscar', input('busca', '', { placeholder: 'Nome, identificador ou série' })),
-    h('p', {}, h('a', { href: showArchived ? '#/maquinas' : '#/maquinas?arquivadas=1' }, showArchived ? 'Ocultar arquivadas' : 'Mostrar arquivadas')),
+    h('div', { class: 'toolbar card' },
+      field('Buscar', input('busca', '', { placeholder: 'Nome, identificador ou série' })),
+      h('a', { class: 'text-link', href: showArchived ? '#/maquinas' : '#/maquinas?arquivadas=1' }, showArchived ? 'Ocultar arquivadas' : 'Mostrar arquivadas')
+    ),
     machines.length ? h('div', { class: 'list' }, machines.map((machine) => h('a', {
       class: 'list-card',
       href: `#/maquinas/${machine.id}`,
@@ -141,23 +193,29 @@ function machineFormPage(snapshot, machine) {
       machine ? linkButton('Voltar', `#/maquinas/${machine.id}`, 'text-link') : linkButton('Voltar', '#/maquinas', 'text-link')
     ),
     h('p', { class: 'hint' }, 'Preencha apenas o que se aplica a esta máquina.'),
-    h('form', { class: 'card form-grid', 'data-form': 'machine', 'data-id': machine?.id || '' },
-      field('Identificador', input('identifier', machine?.identifier || '', { placeholder: 'Gerado automaticamente se ficar vazio' })),
-      field('Nome da máquina', input('name', machine?.name || '', { required: true })),
-      field('Categoria', select('categoryId', optionsOf(categories, (item) => item.name), machine?.categoryId || '', { required: true, placeholder: 'Selecione' })),
-      field('Fabricante', input('manufacturer', machine?.manufacturer || '')),
-      field('Modelo', input('model', machine?.model || '')),
-      field('Ano de fabricação', input('year', machine?.year ?? '', { type: 'number', min: '1950', max: '2100' })),
-      field('Número de série', input('serialNumber', machine?.serialNumber || '')),
-      field('Propriedade', input('property', machine?.property || snapshot.settings.propertyName || '')),
-      field('Setor ou talhão', input('sector', machine?.sector || '')),
-      field('Horímetro', input('hourMeter', machine?.hourMeter ?? '', { inputmode: 'decimal' }), 'Deixe vazio quando a máquina não tiver horímetro.'),
-      field('Responsável', input('responsible', machine?.responsible || '')),
-      field('Data da inspeção', input('inspectionDate', machine?.inspectionDate || '', { type: 'date' })),
-      archived
-        ? h('input', { type: 'hidden', name: 'situation', value: 'arquivada' })
-        : field('Situação', select('situation', situationOptions(), machine?.situation || 'em_operacao')),
-      field('Observações', area('notes', machine?.notes || '')),
+    h('form', { class: 'form-stack', 'data-form': 'machine', 'data-id': machine?.id || '' },
+      sectionCard('Identificação',
+        field('Identificador', input('identifier', machine?.identifier || '', { placeholder: 'Gerado automaticamente se ficar vazio' })),
+        field('Nome da máquina', input('name', machine?.name || '', { required: true })),
+        field('Categoria', select('categoryId', optionsOf(categories, (item) => item.name), machine?.categoryId || '', { required: true, placeholder: 'Selecione' }))
+      ),
+      sectionCard('Equipamento',
+        field('Fabricante', input('manufacturer', machine?.manufacturer || '')),
+        field('Modelo', input('model', machine?.model || '')),
+        field('Ano de fabricação', input('year', machine?.year ?? '', { type: 'number', min: '1950', max: '2100' })),
+        field('Número de série', input('serialNumber', machine?.serialNumber || '')),
+        field('Horímetro', input('hourMeter', machine?.hourMeter ?? '', { inputmode: 'decimal' }), 'Deixe vazio quando a máquina não tiver horímetro.')
+      ),
+      sectionCard('Local e responsável',
+        field('Propriedade', input('property', machine?.property || snapshot.settings.propertyName || '')),
+        field('Setor ou talhão', input('sector', machine?.sector || '')),
+        field('Responsável', input('responsible', machine?.responsible || '')),
+        field('Data da inspeção', input('inspectionDate', machine?.inspectionDate || '', { type: 'date' })),
+        archived
+          ? h('input', { type: 'hidden', name: 'situation', value: 'arquivada' })
+          : field('Situação', select('situation', situationOptions(), machine?.situation || 'em_operacao')),
+        field('Observações', area('notes', machine?.notes || ''))
+      ),
       h('div', { class: 'form-actions' }, h('button', { type: 'submit', class: 'button' }, 'Salvar máquina'))
     )
   )
@@ -249,23 +307,29 @@ function componentFormPage(snapshot, component, presetMachineId = '') {
       linkButton('Voltar', '#/componentes', 'text-link')
     ),
     h('p', { class: 'hint' }, 'A ficha do componente é independente do checklist geral da máquina.'),
-    h('form', { class: 'card form-grid', 'data-form': 'component', 'data-id': component?.id || '' },
-      field('Nome', input('name', component?.name || '', { required: true })),
-      field('Categoria', select('categoryId', optionsOf(categories, (item) => item.name), component?.categoryId || '', { required: true, placeholder: 'Selecione' })),
-      field('Máquina', select('machineId', optionsOf(machines, (item) => `${item.identifier} · ${item.name}`), component?.machineId || presetMachineId, { required: true, placeholder: 'Selecione' })),
-      field('Fabricante', input('manufacturer', component?.manufacturer || '')),
-      field('Modelo', input('model', component?.model || '')),
-      field('Número de série', input('serialNumber', component?.serialNumber || '')),
-      field('Versão de software ou firmware', input('firmware', component?.firmware || '')),
-      field('Estado físico', select('physicalState', enumOptions(PHYSICAL_LABEL), component?.physicalState || 'nao_verificado')),
-      field('Estado de funcionamento', select('functionalState', enumOptions(FUNCTIONAL_LABEL), component?.functionalState || 'nao_verificado')),
-      field('Conexões', area('connections', component?.connections || '')),
-      field('Data da inspeção', input('inspectionDate', component?.inspectionDate || '', { type: 'date' })),
-      field('Observações', area('notes', component?.notes || '')),
+    h('form', { class: 'form-stack', 'data-form': 'component', 'data-id': component?.id || '' },
+      sectionCard('Identificação',
+        field('Nome', input('name', component?.name || '', { required: true })),
+        field('Categoria', select('categoryId', optionsOf(categories, (item) => item.name), component?.categoryId || '', { required: true, placeholder: 'Selecione' })),
+        field('Máquina', select('machineId', optionsOf(machines, (item) => `${item.identifier} · ${item.name}`), component?.machineId || presetMachineId, { required: true, placeholder: 'Selecione' }))
+      ),
+      sectionCard('Equipamento',
+        field('Fabricante', input('manufacturer', component?.manufacturer || '')),
+        field('Modelo', input('model', component?.model || '')),
+        field('Número de série', input('serialNumber', component?.serialNumber || '')),
+        field('Versão de software ou firmware', input('firmware', component?.firmware || ''))
+      ),
+      sectionCard('Condição observada',
+        field('Estado físico', select('physicalState', enumOptions(PHYSICAL_LABEL), component?.physicalState || 'nao_verificado')),
+        field('Estado de funcionamento', select('functionalState', enumOptions(FUNCTIONAL_LABEL), component?.functionalState || 'nao_verificado')),
+        field('Conexões', area('connections', component?.connections || '')),
+        field('Data da inspeção', input('inspectionDate', component?.inspectionDate || '', { type: 'date' })),
+        field('Observações', area('notes', component?.notes || ''))
+      ),
       h('div', { class: 'form-actions' },
         h('button', { type: 'submit', class: 'button' }, 'Salvar componente'),
         component ? button('Arquivar componente', { class: 'button danger', 'data-action': 'archive-component', 'data-id': component.id }) : null,
-        component ? linkButton('Checklist do componente', `#/checklists?scope=componente&targetId=${component.id}`) : null
+        component ? linkButton('Checklist do componente', `#/checklists?scope=componente&targetId=${component.id}`, 'button secondary') : null
       )
     )
   )
@@ -379,19 +443,25 @@ function testFormPage(snapshot, test, query = {}) {
   const components = snapshot.components.filter((item) => !item.archived)
   return h('section', { class: 'screen' },
     h('header', { class: 'screen-head' }, h('h1', {}, test ? 'Teste operacional' : 'Novo teste'), linkButton('Voltar', '#/testes', 'text-link')),
-    h('form', { class: 'card form-grid', 'data-form': 'test', 'data-id': test?.id || '' },
-      field('Máquina', select('machineId', optionsOf(machines, (item) => `${item.identifier} · ${item.name}`), test?.machineId || query.machineId || '', { required: true, placeholder: 'Selecione', action: 'filter-components' })),
-      field('Componente relacionado', select('componentId', componentOptions(components, test?.machineId || query.machineId || ''), test?.componentId || '', { placeholder: 'Nenhum' })),
-      field('Data e hora', input('datetime', test?.datetime || localDateTime(), { type: 'datetime-local', required: true })),
-      field('Responsável', input('responsible', test?.responsible || snapshot.settings.technicalResponsible || '', { required: true })),
-      field('Objetivo', input('objective', test?.objective || '', { required: true })),
-      field('Procedimento', area('procedure', test?.procedure || '')),
-      field('Condições observadas', area('conditions', test?.conditions || '')),
-      field('Resultado', select('result', enumOptions(RESULT_LABEL), test?.result || 'nao_realizado', { required: true })),
-      field('Falhas', area('failures', test?.failures || '')),
-      field('Pendências', area('pending', test?.pending || '')),
-      field('Conclusão', area('conclusion', test?.conclusion || '')),
-      h('button', { type: 'submit', class: 'button' }, 'Salvar teste')
+    h('form', { class: 'form-stack', 'data-form': 'test', 'data-id': test?.id || '' },
+      sectionCard('Contexto',
+        field('Máquina', select('machineId', optionsOf(machines, (item) => `${item.identifier} · ${item.name}`), test?.machineId || query.machineId || '', { required: true, placeholder: 'Selecione', action: 'filter-components' })),
+        field('Componente relacionado', select('componentId', componentOptions(components, test?.machineId || query.machineId || ''), test?.componentId || '', { placeholder: 'Nenhum' })),
+        field('Data e hora', input('datetime', test?.datetime || localDateTime(), { type: 'datetime-local', required: true })),
+        field('Responsável', input('responsible', test?.responsible || snapshot.settings.technicalResponsible || '', { required: true }))
+      ),
+      sectionCard('Execução',
+        field('Objetivo', input('objective', test?.objective || '', { required: true })),
+        field('Procedimento', area('procedure', test?.procedure || '')),
+        field('Condições observadas', area('conditions', test?.conditions || '')),
+        field('Resultado', select('result', enumOptions(RESULT_LABEL), test?.result || 'nao_realizado', { required: true }))
+      ),
+      sectionCard('Desfecho',
+        field('Falhas', area('failures', test?.failures || '')),
+        field('Pendências', area('pending', test?.pending || '')),
+        field('Conclusão', area('conclusion', test?.conclusion || ''))
+      ),
+      h('div', { class: 'form-actions' }, h('button', { type: 'submit', class: 'button' }, 'Salvar teste'))
     )
   )
 }
@@ -473,22 +543,28 @@ function reportPage(snapshot, extras) {
   const machines = snapshot.machines.filter((item) => header.includeArchived || item.situation !== 'arquivada' || item.id === header.machineId)
   return h('section', { class: 'screen' },
     h('header', { class: 'screen-head no-print' }, h('h1', {}, 'Relatório técnico')),
-    h('form', { class: 'card form-grid no-print', 'data-form': 'report' },
-      field('Propriedade', input('propertyName', header.propertyName || '')),
-      field('Identificação do trabalho', input('workTitle', header.workTitle || '')),
-      field('Data da inspeção', input('date', header.date || '', { type: 'date' })),
-      field('Responsáveis', input('responsibles', header.responsibles || '')),
-      field('Responsável técnico', input('technicalResponsible', header.technicalResponsible || '')),
-      field('Máquina', select('machineId', optionsOf(machines, (item) => `${item.identifier} · ${item.name}`), header.machineId || '', { placeholder: 'Todas' })),
-      field('Categoria', select('categoryId', optionsOf(snapshot.categories.filter((item) => item.kind === 'maquina'), (item) => item.name), header.categoryId || '', { placeholder: 'Todas' })),
-      field('Período inicial', input('from', header.from || '', { type: 'date' })),
-      field('Período final', input('to', header.to || '', { type: 'date' })),
-      field('Conclusão', area('conclusion', header.conclusion || '')),
-      h('label', { class: 'check' }, h('input', { type: 'checkbox', name: 'includeArchived', checked: header.includeArchived }), 'Incluir máquinas arquivadas'),
+    h('form', { class: 'form-stack no-print', 'data-form': 'report' },
+      sectionCard('Identificação',
+        field('Propriedade', input('propertyName', header.propertyName || '')),
+        field('Identificação do trabalho', input('workTitle', header.workTitle || '')),
+        field('Data da inspeção', input('date', header.date || '', { type: 'date' })),
+        field('Responsáveis', input('responsibles', header.responsibles || '')),
+        field('Responsável técnico', input('technicalResponsible', header.technicalResponsible || ''))
+      ),
+      sectionCard('Filtro',
+        field('Máquina', select('machineId', optionsOf(machines, (item) => `${item.identifier} · ${item.name}`), header.machineId || '', { placeholder: 'Todas' })),
+        field('Categoria', select('categoryId', optionsOf(snapshot.categories.filter((item) => item.kind === 'maquina'), (item) => item.name), header.categoryId || '', { placeholder: 'Todas' })),
+        field('Período inicial', input('from', header.from || '', { type: 'date' })),
+        field('Período final', input('to', header.to || '', { type: 'date' })),
+        h('label', { class: 'check' }, h('input', { type: 'checkbox', name: 'includeArchived', checked: header.includeArchived }), 'Incluir máquinas arquivadas')
+      ),
+      sectionCard('Conclusão',
+        field('Conclusão', area('conclusion', header.conclusion || ''))
+      ),
       h('div', { class: 'form-actions' },
-        h('button', { type: 'submit', class: 'button secondary', 'data-submit': 'preview' }, 'Atualizar prévia'),
         h('button', { type: 'submit', class: 'button', 'data-submit': 'pdf' }, 'Exportar PDF'),
-        h('button', { type: 'submit', class: 'button secondary', 'data-submit': 'print' }, 'Imprimir')
+        h('button', { type: 'submit', class: 'button secondary', 'data-submit': 'preview' }, 'Atualizar prévia'),
+        h('button', { type: 'submit', class: 'button ghost', 'data-submit': 'print' }, 'Imprimir')
       )
     ),
     reportDocument(report, extras)
@@ -525,8 +601,8 @@ function dataPage(snapshot, extras) {
       button('Cancelar', { class: 'button secondary', 'data-action': 'cancel-import' })
     ) : null,
     h('div', { class: 'quick' },
-      linkButton('Categorias', '#/dados/categorias'),
-      linkButton('Modelos de checklist', '#/dados/modelos')
+      linkButton('Categorias', '#/dados/categorias', 'button secondary'),
+      linkButton('Modelos de checklist', '#/dados/modelos', 'button secondary')
     )
   )
 }
@@ -684,6 +760,10 @@ export function readTemplateDraft(form) {
       }))
     }))
   }
+}
+
+function sectionCard(title, ...nodes) {
+  return h('section', { class: 'card form-grid' }, h('h2', {}, title), ...nodes)
 }
 
 function simpleTable(headers, rows) {
