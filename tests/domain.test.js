@@ -14,6 +14,7 @@ import { buildReport } from '../src/models/report.js'
 import { validatePhotoLink } from '../src/models/photo.js'
 import { mapStorageError } from '../src/models/storageError.js'
 import { defaultCategories, defaultTemplates } from '../src/models/seed.js'
+import { filterManufacturers, manufacturersFor } from '../src/models/manufacturers.js'
 import { validateTemplate } from '../src/models/template.js'
 
 const categories = defaultCategories().filter((category) => category.kind === 'maquina')
@@ -313,6 +314,33 @@ describe('modelos configuráveis', () => {
       'Teste estático registrado',
       'Teste operacional registrado'
     ]))
+  })
+})
+
+describe('fabricantes', () => {
+  it('sugere marcas da categoria conforme o texto e aceita um nome já usado no aparelho', () => {
+    expect(filterManufacturers('cat-pulverizador', 'ja')).toEqual(['Jacto'])
+    expect(filterManufacturers('cat-plantadeira', 'jan')).toEqual(['Jan'])
+    expect(filterManufacturers('cat-trator', 'val')).toEqual(['Valtra'])
+    expect(filterManufacturers('cat-trator', 'jacto')).toEqual([])
+    expect(filterManufacturers('cat-receptor', 'hexa')).toEqual(['Hexagon'])
+    expect(filterManufacturers('cat-pulverizador', 'ima', ['Imasa'])).toEqual(['Imasa'])
+    expect(filterManufacturers('cat-trator', '')).toEqual([])
+  })
+
+  it('não inclui Kubota nem Deutz', () => {
+    const names = [
+      ...manufacturersFor('cat-trator'),
+      ...manufacturersFor('cat-plantadeira'),
+      ...manufacturersFor('cat-pulverizador'),
+      ...manufacturersFor('cat-distribuidor'),
+      ...manufacturersFor('cat-colheitadeira'),
+      ...manufacturersFor('cat-gnss'),
+      ...manufacturersFor('cat-outro'),
+      ...manufacturersFor('cat-monitor'),
+      ...manufacturersFor('')
+    ].map((name) => name.toLowerCase())
+    expect(names.some((name) => name.includes('kubota') || name.includes('deutz'))).toBe(false)
   })
 })
 

@@ -279,6 +279,36 @@ h3 { font-size: 0.98rem; margin: 0 0 10px; font-weight: 600; }
 .form-stack { display: grid; gap: 14px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
 .form-grid > h2, .form-grid > .form-actions, .form-grid > .check, .form-grid .field:has(textarea) { grid-column: 1 / -1; }
+.suggest-anchor { position: relative; }
+.suggest-list {
+  position: absolute;
+  z-index: 8;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(24 24 27 / 8%);
+  max-height: 220px;
+  overflow: auto;
+}
+.suggest-option {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  text-align: left;
+  font-weight: 500;
+  cursor: pointer;
+}
+.suggest-option:hover,
+.suggest-option:focus-visible { background: #f4f4f5; }
 .field { display: grid; gap: 6px; font-weight: 500; }
 .field > span { font-size: 0.82rem; color: #3f3f46; }
 .field small { font-weight: 400; color: var(--muted); }

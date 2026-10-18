@@ -2,9 +2,11 @@ import { createRepository, openDatabase } from '../services/database.js'
 import { validateBackup } from '../models/backup.js'
 import { validatePhotoLink } from '../models/photo.js'
 import { inspectionSummary } from '../models/checklist.js'
+import { filterManufacturers } from '../models/manufacturers.js'
 import {
   appShell,
   defaultReportHeader,
+  fillManufacturerSuggestions,
   prepareReport,
   readTemplateDraft,
   renderPage,
@@ -50,6 +52,9 @@ export async function startApp(target = document.querySelector('#app')) {
   repository = createRepository(await openDatabase())
   await repository.ensureSeed()
   root.addEventListener('click', (event) => {
+    if (!event.target.closest?.('.suggest')) {
+      root.querySelectorAll('.suggest-list').forEach((list) => { list.hidden = true })
+    }
     const target = event.target.closest?.('[data-action]')
     if (!target || !root.contains(target)) return
     const action = {
@@ -59,6 +64,8 @@ export async function startApp(target = document.querySelector('#app')) {
       item: target.dataset.item || '',
       state: target.dataset.state || '',
       section: target.dataset.section || '',
+      value: target.dataset.value || '',
+      element: target,
       card: target.closest('[data-item-card]')
     }
     queue = queue.then(() => onClick(action)).catch(showError)
@@ -139,6 +146,15 @@ function parseHash(hash = location.hash) {
 }
 
 async function onClick(action) {
+  if (action.name === 'pick-manufacturer') {
+    const input = action.element?.closest('.suggest')?.querySelector('[name="manufacturer"]')
+      || root.querySelector('form [name="manufacturer"]')
+    const list = input?.form?.querySelector('.suggest-list')
+    if (input) input.value = action.value
+    if (list) fillManufacturerSuggestions(list, [])
+    input?.focus()
+    return
+  }
   if (action.name === 'toggle-nav') {
     navCollapsed = !navCollapsed
     await render()
@@ -341,17 +357,36 @@ async function onChange(input) {
   if (input.dataset.action === 'sync-inspection-form') {
     syncInspectionForm(input.form, snapshot)
   }
+  if (input.name === 'categoryId') {
+    const manufacturer = input.form?.querySelector('[name="manufacturer"]')
+    if (manufacturer) syncManufacturerSuggestions(manufacturer)
+  }
   if (input.form) syncReveals(input.form)
   if (input.form?.dataset.form === 'report' && input.dataset.submit) reportSubmit = input.dataset.submit
 }
 
 function onInput(event) {
   const input = event.target
+  if (input.name === 'manufacturer') {
+    syncManufacturerSuggestions(input)
+    return
+  }
   if (input.name !== 'busca') return
   const term = input.value.trim().toLowerCase()
   root.querySelectorAll('[data-search]').forEach((card) => {
     card.hidden = term.length > 0 && !card.dataset.search.includes(term)
   })
+}
+
+function syncManufacturerSuggestions(input) {
+  const list = input.form?.querySelector('.suggest-list')
+  if (!list || !snapshot) return
+  const categoryId = input.form.querySelector('[name="categoryId"]')?.value || ''
+  const records = input.form.dataset.form === 'component' ? snapshot.components : snapshot.machines
+  const known = records
+    .filter((item) => item.manufacturer && (!categoryId || item.categoryId === categoryId))
+    .map((item) => item.manufacturer)
+  fillManufacturerSuggestions(list, filterManufacturers(categoryId, input.value, known))
 }
 
 function editTemplateDraft(action) {
