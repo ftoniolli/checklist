@@ -2,11 +2,11 @@ import { createRepository, openDatabase } from '../services/database.js'
 import { validateBackup } from '../models/backup.js'
 import { validatePhotoLink } from '../models/photo.js'
 import { inspectionSummary } from '../models/checklist.js'
-import { filterManufacturers } from '../models/manufacturers.js'
+import { filterManufacturers, filterModels } from '../models/manufacturers.js'
 import {
   appShell,
   defaultReportHeader,
-  fillManufacturerSuggestions,
+  fillSuggestions,
   prepareReport,
   readTemplateDraft,
   renderPage,
@@ -65,6 +65,7 @@ export async function startApp(target = document.querySelector('#app')) {
       state: target.dataset.state || '',
       section: target.dataset.section || '',
       value: target.dataset.value || '',
+      field: target.dataset.field || '',
       element: target,
       card: target.closest('[data-item-card]')
     }
@@ -146,12 +147,13 @@ function parseHash(hash = location.hash) {
 }
 
 async function onClick(action) {
-  if (action.name === 'pick-manufacturer') {
-    const input = action.element?.closest('.suggest')?.querySelector('[name="manufacturer"]')
-      || root.querySelector('form [name="manufacturer"]')
-    const list = input?.form?.querySelector('.suggest-list')
+  if (action.name === 'pick-suggestion') {
+    const field = action.field || action.element?.dataset?.field || 'manufacturer'
+    const input = action.element?.closest('.suggest')?.querySelector('input')
+      || root.querySelector(`form [name="${field}"]`)
+    const list = input?.closest('.suggest')?.querySelector('.suggest-list')
     if (input) input.value = action.value
-    if (list) fillManufacturerSuggestions(list, [])
+    if (list) fillSuggestions(list, [])
     input?.focus()
     return
   }
@@ -357,9 +359,11 @@ async function onChange(input) {
   if (input.dataset.action === 'sync-inspection-form') {
     syncInspectionForm(input.form, snapshot)
   }
-  if (input.name === 'categoryId') {
-    const manufacturer = input.form?.querySelector('[name="manufacturer"]')
-    if (manufacturer) syncManufacturerSuggestions(manufacturer)
+  if (input.name === 'categoryId' || input.name === 'manufacturer') {
+    for (const name of input.name === 'categoryId' ? ['manufacturer', 'model'] : ['model']) {
+      const field = input.form?.querySelector(`[name="${name}"]`)
+      if (field) syncSuggestions(field)
+    }
   }
   if (input.form) syncReveals(input.form)
   if (input.form?.dataset.form === 'report' && input.dataset.submit) reportSubmit = input.dataset.submit
@@ -367,8 +371,12 @@ async function onChange(input) {
 
 function onInput(event) {
   const input = event.target
-  if (input.name === 'manufacturer') {
-    syncManufacturerSuggestions(input)
+  if (input.name === 'manufacturer' || input.name === 'model') {
+    syncSuggestions(input)
+    if (input.name === 'manufacturer') {
+      const model = input.form?.querySelector('[name="model"]')
+      if (model?.value) syncSuggestions(model)
+    }
     return
   }
   if (input.name !== 'busca') return
@@ -378,15 +386,16 @@ function onInput(event) {
   })
 }
 
-function syncManufacturerSuggestions(input) {
-  const list = input.form?.querySelector('.suggest-list')
+function syncSuggestions(input) {
+  const list = input.closest('.suggest')?.querySelector('.suggest-list')
   if (!list || !snapshot) return
-  const categoryId = input.form.querySelector('[name="categoryId"]')?.value || ''
-  const records = input.form.dataset.form === 'component' ? snapshot.components : snapshot.machines
-  const known = records
-    .filter((item) => item.manufacturer && (!categoryId || item.categoryId === categoryId))
-    .map((item) => item.manufacturer)
-  fillManufacturerSuggestions(list, filterManufacturers(categoryId, input.value, known))
+  const categoryId = input.form?.querySelector('[name="categoryId"]')?.value || ''
+  const records = (input.form?.dataset.form === 'component' ? snapshot.components : snapshot.machines)
+    .filter((item) => !categoryId || item.categoryId === categoryId)
+  const names = input.name === 'model'
+    ? filterModels(categoryId, input.form?.querySelector('[name="manufacturer"]')?.value || '', input.value, records.map((item) => item.model))
+    : filterManufacturers(categoryId, input.value, records.map((item) => item.manufacturer))
+  fillSuggestions(list, names)
 }
 
 function editTemplateDraft(action) {

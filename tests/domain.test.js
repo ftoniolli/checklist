@@ -14,7 +14,7 @@ import { buildReport } from '../src/models/report.js'
 import { validatePhotoLink } from '../src/models/photo.js'
 import { mapStorageError } from '../src/models/storageError.js'
 import { defaultCategories, defaultTemplates } from '../src/models/seed.js'
-import { filterManufacturers, manufacturersFor } from '../src/models/manufacturers.js'
+import { filterManufacturers, filterModels, manufacturersFor } from '../src/models/manufacturers.js'
 import { validateTemplate } from '../src/models/template.js'
 
 const categories = defaultCategories().filter((category) => category.kind === 'maquina')
@@ -328,19 +328,19 @@ describe('fabricantes', () => {
     expect(filterManufacturers('cat-trator', '')).toEqual([])
   })
 
-  it('não inclui Kubota nem Deutz', () => {
-    const names = [
-      ...manufacturersFor('cat-trator'),
-      ...manufacturersFor('cat-plantadeira'),
-      ...manufacturersFor('cat-pulverizador'),
-      ...manufacturersFor('cat-distribuidor'),
-      ...manufacturersFor('cat-colheitadeira'),
-      ...manufacturersFor('cat-gnss'),
-      ...manufacturersFor('cat-outro'),
-      ...manufacturersFor('cat-monitor'),
-      ...manufacturersFor('')
-    ].map((name) => name.toLowerCase())
-    expect(names.some((name) => name.includes('kubota') || name.includes('deutz'))).toBe(false)
+  it('separa máquinas e componentes e inclui marcas conhecidas no Brasil e no exterior', () => {
+    expect(manufacturersFor('cat-trator')).toEqual(expect.arrayContaining(['John Deere', 'CNH', 'Kubota', 'Deutz-Fahr']))
+    expect(manufacturersFor('cat-monitor')).toEqual(expect.arrayContaining(['FieldView', 'Trimble', 'CNH', 'John Deere']))
+    expect(manufacturersFor('cat-receptor')).toEqual(expect.arrayContaining(['Trimble', 'John Deere', 'Topcon']))
+    expect(manufacturersFor('cat-piloto')).toEqual(expect.arrayContaining(['Trimble', 'CNH', 'John Deere']))
+    expect(manufacturersFor('cat-controlador')).toEqual(expect.arrayContaining(['Raven', 'Trimble', 'ARAG']))
+    expect(manufacturersFor('cat-sensor')).toEqual(expect.arrayContaining(['Precision Planting', 'Trimble']))
+    expect(manufacturersFor('cat-tablet')).toContain('FieldView')
+    expect(manufacturersFor('cat-monitor')).not.toContain('Kubota')
+    expect(filterModels('cat-receptor', 'John Deere', 'star')).toEqual(expect.arrayContaining(['StarFire 6000', 'StarFire 7000']))
+    expect(filterModels('cat-piloto', 'Trimble', 'ez')).toEqual(expect.arrayContaining(['EZ-Pilot', 'EZ-Steer']))
+    expect(filterModels('cat-monitor', 'FieldView', 'dri')).toEqual(['Drive'])
+    expect(filterModels('cat-monitor', '', 'gfx')).toEqual(expect.arrayContaining(['Trimble GFX-350', 'Trimble GFX-750']))
   })
 })
 

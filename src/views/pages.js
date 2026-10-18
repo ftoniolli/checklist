@@ -194,33 +194,32 @@ function machineListPage(snapshot, query) {
   )
 }
 
-export function fillManufacturerSuggestions(list, names) {
+export function fillSuggestions(list, names) {
+  const input = list.closest('.suggest')?.querySelector('input')
   list.replaceChildren(...names.map((name) => h('li', {}, h('button', {
     type: 'button',
     class: 'suggest-option',
-    'data-action': 'pick-manufacturer',
+    'data-action': 'pick-suggestion',
+    'data-field': input?.name || '',
     'data-value': name
   }, name))))
   list.hidden = names.length === 0
-  const input = list.closest('.suggest')?.querySelector('[name="manufacturer"]')
   if (input) input.setAttribute('aria-expanded', names.length ? 'true' : 'false')
 }
 
-function manufacturerField(value) {
+function suggestField(label, name, value) {
   return h('div', { class: 'field suggest' },
-    h('span', {}, 'Fabricante'),
+    h('span', {}, label),
     h('div', { class: 'suggest-anchor' },
       h('input', {
-        name: 'manufacturer',
+        name,
         value: value ?? '',
         autocomplete: 'off',
-        placeholder: 'Digite para ver os fabricantes',
         'aria-autocomplete': 'list',
         'aria-expanded': 'false'
       }),
       h('ul', { class: 'suggest-list', hidden: true, role: 'listbox' })
-    ),
-    h('small', {}, 'Sugestões de marcas usadas no Brasil. Um nome fora da lista também pode ser salvo.')
+    )
   )
 }
 
@@ -241,8 +240,8 @@ function machineFormPage(snapshot, machine) {
         field('Categoria', select('categoryId', optionsOf(categories, (item) => item.name), machine?.categoryId || '', { required: true, placeholder: 'Selecione' }))
       ),
       sectionCard('Equipamento',
-        manufacturerField(machine?.manufacturer || ''),
-        field('Modelo', input('model', machine?.model || '')),
+        suggestField('Fabricante', 'manufacturer', machine?.manufacturer || ''),
+        suggestField('Modelo', 'model', machine?.model || ''),
         field('Ano de fabricação', input('year', machine?.year ?? '', { type: 'number', min: '1950', max: '2100' })),
         field('Número de série', input('serialNumber', machine?.serialNumber || '')),
         field('Horímetro', input('hourMeter', machine?.hourMeter ?? '', { inputmode: 'decimal' }), 'Deixe vazio quando a máquina não tiver horímetro.')
@@ -355,8 +354,8 @@ function componentFormPage(snapshot, component, presetMachineId = '') {
         field('Máquina', select('machineId', optionsOf(machines, (item) => `${item.identifier} · ${item.name}`), component?.machineId || presetMachineId, { required: true, placeholder: 'Selecione' }))
       ),
       sectionCard('Equipamento',
-        manufacturerField(component?.manufacturer || ''),
-        field('Modelo', input('model', component?.model || '')),
+        suggestField('Fabricante', 'manufacturer', component?.manufacturer || ''),
+        suggestField('Modelo', 'model', component?.model || ''),
         field('Número de série', input('serialNumber', component?.serialNumber || '')),
         field('Versão de software ou firmware', input('firmware', component?.firmware || ''))
       ),
