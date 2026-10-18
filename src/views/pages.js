@@ -59,7 +59,6 @@ function icon(name) {
 export function appShell(route, extras, content) {
   const collapsed = Boolean(extras.navCollapsed)
   return h('div', { class: collapsed ? 'shell is-collapsed' : 'shell' },
-    h('div', { class: 'frost', 'aria-hidden': 'true' }),
     h('aside', { class: 'nav' },
       h('div', { class: 'brand' }, icon('checklists'), h('span', { class: 'brand-text' }, 'Checklist')),
       ...NAV.map(([name, label, href]) => h('a', {
