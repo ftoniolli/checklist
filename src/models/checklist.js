@@ -11,9 +11,9 @@ export function normalizeAnswer(patch = {}) {
     note: String(patch.note ?? '').trim(),
     photoIds: Array.isArray(patch.photoIds) ? [...patch.photoIds] : [],
     severity: nonCompliant ? (SEVERITIES.includes(patch.severity) ? patch.severity : 'media') : '',
-    recommendedAction: String(patch.recommendedAction ?? '').trim(),
-    correctionOwner: String(patch.correctionOwner ?? '').trim(),
-    dueDate: String(patch.dueDate ?? '').trim(),
+    recommendedAction: nonCompliant ? String(patch.recommendedAction ?? '').trim() : '',
+    correctionOwner: nonCompliant ? String(patch.correctionOwner ?? '').trim() : '',
+    dueDate: nonCompliant ? String(patch.dueDate ?? '').trim() : '',
     correctionStatus: nonCompliant
       ? (CORRECTIONS.includes(patch.correctionStatus) ? patch.correctionStatus : 'aberta')
       : ''

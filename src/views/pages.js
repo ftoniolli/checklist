@@ -412,11 +412,13 @@ function answerCard(snapshot, inspection, item) {
     }, STATE_LABEL[value]))),
     h('input', { type: 'hidden', name: 'state', value: state }),
     field('Observação', area('note', stored?.note || '')),
-    field('Gravidade', select('severity', [{ value: '', label: 'Não informada' }, ...enumOptions(SEVERITY_LABEL)], stored?.severity || '')),
-    field('Ação recomendada', input('recommendedAction', stored?.recommendedAction || '')),
-    field('Responsável pela correção', input('correctionOwner', stored?.correctionOwner || '')),
-    field('Prazo', input('dueDate', stored?.dueDate || '', { type: 'date' })),
-    field('Estado da correção', select('correctionStatus', [{ value: '', label: 'Não informado' }, ...enumOptions(CORRECTION_LABEL)], stored?.correctionStatus || '')),
+    reveal('state', 'nao_conforme',
+      field('Gravidade', select('severity', [{ value: '', label: 'Não informada' }, ...enumOptions(SEVERITY_LABEL)], stored?.severity || '')),
+      field('Ação recomendada', input('recommendedAction', stored?.recommendedAction || '')),
+      field('Responsável pela correção', input('correctionOwner', stored?.correctionOwner || '')),
+      field('Prazo', input('dueDate', stored?.dueDate || '', { type: 'date' })),
+      field('Estado da correção', select('correctionStatus', [{ value: '', label: 'Não informado' }, ...enumOptions(CORRECTION_LABEL)], stored?.correctionStatus || ''))
+    ),
     h('div', { class: 'form-actions' },
       button('Salvar detalhes', { 'data-action': 'save-answer-details', 'data-inspection': inspection.id, 'data-item': item.id }),
       linkButton('Anexar fotografia', `#/fotos?machineId=${inspection.machineId}&componentId=${componentId}&inspectionId=${inspection.id}&itemId=${item.id}`)
@@ -445,20 +447,26 @@ function testFormPage(snapshot, test, query = {}) {
     h('form', { class: 'form-stack', 'data-form': 'test', 'data-id': test?.id || '' },
       sectionCard('Contexto',
         field('Máquina', select('machineId', optionsOf(machines, (item) => `${item.identifier} · ${item.name}`), test?.machineId || query.machineId || '', { required: true, placeholder: 'Selecione', action: 'filter-components' })),
-        field('Componente relacionado', select('componentId', componentOptions(components, test?.machineId || query.machineId || ''), test?.componentId || '', { placeholder: 'Nenhum' })),
+        reveal('machineId', 'preenchido',
+          field('Componente relacionado', select('componentId', componentOptions(components, test?.machineId || query.machineId || ''), test?.componentId || '', { placeholder: 'Nenhum' }))
+        ),
         field('Data e hora', input('datetime', test?.datetime || localDateTime(), { type: 'datetime-local', required: true })),
         field('Responsável', input('responsible', test?.responsible || snapshot.settings.technicalResponsible || '', { required: true }))
       ),
       sectionCard('Execução',
         field('Objetivo', input('objective', test?.objective || '', { required: true })),
-        field('Procedimento', area('procedure', test?.procedure || '')),
-        field('Condições observadas', area('conditions', test?.conditions || '')),
-        field('Resultado', select('result', enumOptions(RESULT_LABEL), test?.result || 'nao_realizado', { required: true }))
-      ),
-      sectionCard('Desfecho',
-        field('Falhas', area('failures', test?.failures || '')),
-        field('Pendências', area('pending', test?.pending || '')),
-        field('Conclusão', area('conclusion', test?.conclusion || ''))
+        field('Resultado', select('result', enumOptions(RESULT_LABEL), test?.result || 'nao_realizado', { required: true })),
+        reveal('result', 'aprovado aprovado_com_ressalvas reprovado',
+          field('Procedimento', area('procedure', test?.procedure || '')),
+          field('Condições observadas', area('conditions', test?.conditions || ''))
+        ),
+        reveal('result', 'aprovado_com_ressalvas reprovado',
+          field('Falhas', area('failures', test?.failures || '')),
+          field('Pendências', area('pending', test?.pending || ''))
+        ),
+        reveal('result', 'aprovado aprovado_com_ressalvas reprovado',
+          field('Conclusão', area('conclusion', test?.conclusion || ''))
+        )
       ),
       h('div', { class: 'form-actions' }, h('button', { type: 'submit', class: 'button' }, 'Salvar teste'))
     )
@@ -479,7 +487,9 @@ function photoListPage(snapshot, query, extras) {
     h('header', { class: 'screen-head' }, h('h1', {}, 'Fotografias e anexos')),
     h('form', { class: 'card form-grid', 'data-form': 'photo' },
       field('Máquina', select('machineId', optionsOf(machines, (item) => `${item.identifier} · ${item.name}`), query.machineId || '', { required: true, placeholder: 'Selecione', action: 'filter-components' })),
-      field('Componente', select('componentId', componentOptions(snapshot.components, query.machineId || ''), query.componentId || '', { placeholder: 'Nenhum' })),
+      reveal('machineId', 'preenchido',
+        field('Componente', select('componentId', componentOptions(snapshot.components, query.machineId || ''), query.componentId || '', { placeholder: 'Nenhum' }))
+      ),
       field('Descrição', input('description', '')),
       field('Data', input('capturedAt', new Date().toISOString().slice(0, 16), { type: 'datetime-local' })),
       h('input', { type: 'hidden', name: 'inspectionId', value: query.inspectionId || '' }),
@@ -491,7 +501,9 @@ function photoListPage(snapshot, query, extras) {
     ),
     h('form', { class: 'card inline-form', 'data-form': 'photo-filter' },
       field('Filtrar por máquina', select('machineId', optionsOf(machines, (item) => item.name), query.machineId || '', { placeholder: 'Todas' })),
-      field('Componente', select('componentId', componentOptions(snapshot.components, query.machineId || ''), query.componentId || '', { placeholder: 'Todos' })),
+      reveal('machineId', 'preenchido',
+        field('Componente', select('componentId', componentOptions(snapshot.components, query.machineId || ''), query.componentId || '', { placeholder: 'Todos' }))
+      ),
       field('De', input('from', query.from || '', { type: 'date' })),
       field('Até', input('to', query.to || '', { type: 'date' })),
       h('button', { type: 'submit', class: 'button secondary' }, 'Filtrar')
@@ -759,6 +771,22 @@ export function readTemplateDraft(form) {
       }))
     }))
   }
+}
+
+function reveal(source, when, ...nodes) {
+  return h('div', { class: 'reveal', 'data-source': source, 'data-when': when }, ...nodes)
+}
+
+export function syncReveals(scope) {
+  scope.querySelectorAll('[data-when]').forEach((node) => {
+    const owner = node.closest('form') || node.closest('[data-item-card]')
+    const source = owner?.querySelector(`[name="${node.dataset.source}"]`)
+    const value = source?.value || ''
+    const accepted = node.dataset.when.split(' ')
+    const visible = accepted.includes('preenchido') ? value !== '' : accepted.includes(value)
+    node.hidden = !visible
+    node.querySelectorAll('input, select, textarea').forEach((control) => { control.disabled = !visible })
+  })
 }
 
 function sectionCard(title, ...nodes) {

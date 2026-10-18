@@ -8,7 +8,8 @@ import {
   prepareReport,
   readTemplateDraft,
   renderPage,
-  syncInspectionForm
+  syncInspectionForm,
+  syncReveals
 } from '../views/pages.js'
 
 let repository
@@ -126,6 +127,7 @@ async function render() {
   root.replaceChildren(appShell(route, { flash: visibleFlash, offline, navCollapsed }, page))
   const inspectionForm = root.querySelector('[data-form="inspection"]')
   if (inspectionForm) syncInspectionForm(inspectionForm, snapshot)
+  syncReveals(root)
   document.title = 'Checklist'
 }
 
@@ -331,6 +333,7 @@ async function onChange(input) {
   if (input.dataset.action === 'sync-inspection-form') {
     syncInspectionForm(input.form, snapshot)
   }
+  if (input.form) syncReveals(input.form)
   if (input.form?.dataset.form === 'report' && input.dataset.submit) reportSubmit = input.dataset.submit
 }
 
