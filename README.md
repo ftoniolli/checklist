@@ -44,7 +44,7 @@ npm test
 npm run dev
 ```
 
-O endereço local aparece no terminal. Para gerar a pasta que vai ao servidor:
+O endereço local aparece no terminal. Para gerar a pasta publicada:
 
 ```bash
 npm run build
