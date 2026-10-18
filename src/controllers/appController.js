@@ -25,7 +25,7 @@ let templateDraft = null
 let templateDraftHash = ''
 let reportHeader = null
 let reportSubmit = 'preview'
-let navCollapsed = false
+let navCollapsed = true
 let queue = Promise.resolve()
 let objectUrls = []
 let snapshot = null
@@ -142,6 +142,14 @@ async function onClick(action) {
   if (action.name === 'toggle-nav') {
     navCollapsed = !navCollapsed
     await render()
+  } else if (action.name === 'reset-data') {
+    if (!window.confirm('Apagar todos os cadastros, inspeções, fotos e preferências deste dispositivo?')) return
+    await repository.resetDevice()
+    pendingImport = null
+    templateDraft = null
+    reportHeader = null
+    notify('Os dados deste dispositivo foram apagados.')
+    await go('#/painel')
   } else if (action.name === 'archive-machine') {
     if (!window.confirm('Arquivar esta máquina? O histórico de inspeções será mantido.')) return
     await repository.archiveMachine(action.id)
@@ -395,7 +403,14 @@ async function downloadBackup() {
 
 async function downloadPdf(report) {
   const { renderPdf } = await import('../services/pdf.js')
-  const bytes = await renderPdf(report)
+  let logoBytes = null
+  try {
+    const response = await fetch(`${import.meta.env.BASE_URL}logo.png`)
+    if (response.ok) logoBytes = new Uint8Array(await response.arrayBuffer())
+  } catch {
+    logoBytes = null
+  }
+  const bytes = await renderPdf({ ...report, logoBytes })
   const stamp = (report.date || 'relatorio').replace(/[:.]/g, '-')
   downloadBlob(new Blob([bytes], { type: 'application/pdf' }), `checklist-relatorio-${stamp}.pdf`)
   notify('PDF gerado neste dispositivo.')

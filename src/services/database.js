@@ -502,6 +502,17 @@ export function createRepository(database) {
       } catch (error) {
         throw mapStorageError(error)
       }
+    },
+
+    async resetDevice() {
+      try {
+        const transaction = database.transaction(STORES, 'readwrite')
+        for (const storeName of STORES) transaction.objectStore(storeName).clear()
+        await transactionDone(transaction)
+      } catch (error) {
+        throw mapStorageError(error)
+      }
+      await this.ensureSeed()
     }
   }
 }

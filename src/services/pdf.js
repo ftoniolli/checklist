@@ -98,6 +98,7 @@ export async function renderPdf(report) {
   }
 
   openPage(false)
+  await drawLogo()
   heading('Relatório técnico', 20)
   paragraph(report.organizationName || 'ASCAD Agrotecnologia')
   table(['Campo', 'Registro'], [
@@ -209,6 +210,20 @@ export async function renderPdf(report) {
   })
 
   return pdf.save()
+
+  async function drawLogo() {
+    if (!report.logoBytes) return
+    try {
+      const image = await pdf.embedPng(report.logoBytes)
+      const width = 200
+      const height = width * (image.height / image.width)
+      y -= height
+      page.drawImage(image, { x: (PAGE_WIDTH - width) / 2, y, width, height })
+      gap(14)
+    } catch {
+      // o relatório segue sem a marca quando a imagem não puder ser lida
+    }
+  }
 
   async function drawPhoto(document, photo) {
     if (!photo.blob) {

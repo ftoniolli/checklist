@@ -37,7 +37,8 @@ const ICONS = {
   fotos: 'M4 7h4l2-2h4l2 2h4v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
   relatorio: 'M7 3h7l5 5v13H7zM14 3v5h5M9 13h6M9 17h6',
   dados: 'M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zM4 7v5c0 1.7 3.6 3 8 3s8-1.3 8-3V7M4 12v5c0 1.7 3.6 3 8 3s8-1.3 8-3v-5',
-  menu: 'M4 5h16v14H4zM9 5v14'
+  menu: 'M4 5h16v14H4zM9 5v14',
+  config: 'M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'
 }
 
 function icon(name) {
@@ -80,7 +81,16 @@ export function appShell(route, extras, content) {
           }, icon('menu')),
           h('div', { class: 'identity' }, h('strong', {}, 'Checklist'), h('span', {}, 'ASCAD Agrotecnologia'))
         ),
-        extras.offline ? h('span', { class: 'offline' }, 'Sem conexão') : null
+        h('div', { class: 'topbar-end' },
+          extras.offline ? h('span', { class: 'offline' }, 'Sem conexão') : null,
+          h('a', {
+            class: 'icon-button',
+            href: '#/configuracoes',
+            title: 'Configurações',
+            'aria-label': 'Configurações',
+            'aria-current': route.parts[0] === 'configuracoes' ? 'page' : null
+          }, icon('config'))
+        )
       ),
       extras.flash ? h('p', { class: `flash flash-${extras.flash.type}`, role: 'status' }, extras.flash.text) : null,
       h('main', { id: 'conteudo' }, content)
@@ -107,6 +117,7 @@ export function renderPage(route, snapshot, extras) {
   if (name === 'fotos' && second) return photoDetailPage(snapshot, findId(snapshot.photos, second), extras)
   if (name === 'fotos') return photoListPage(snapshot, route.query, extras)
   if (name === 'relatorio') return reportPage(snapshot, extras)
+  if (name === 'configuracoes') return settingsPage(snapshot)
   if (name === 'dados' && second === 'categorias') return categoryPage(snapshot)
   if (name === 'dados' && second === 'modelos' && !third) return templateListPage(snapshot)
   if (name === 'dados' && second === 'modelos') return templateFormPage(snapshot, extras.templateDraft)
@@ -127,6 +138,7 @@ function dashboardPage(snapshot) {
   const attention = cards.filter((card) => card[0] === 'pending' || card[0] === 'nonconformities')
   const context = cards.filter((card) => card[0] !== 'pending' && card[0] !== 'nonconformities')
   return h('section', { class: 'screen' },
+    h('img', { class: 'panel-logo', src: `${import.meta.env.BASE_URL}logo.png`, alt: 'ASCAD Agrotecnologia' }),
     h('header', { class: 'screen-head' },
       h('div', { class: 'titles' },
         h('h1', {}, 'Painel'),
@@ -590,13 +602,8 @@ function dataPage(snapshot, extras) {
       h('h2', {}, 'Os dados ficam neste dispositivo'),
       h('p', {}, 'Inspeções, fotografias e relatórios não são enviados a um servidor. Limpar o navegador pode apagar o trabalho. Faça um backup periódico e guarde o arquivo fora do tablet.'),
       extras.storage ? h('p', {}, `Uso estimado: ${formatBytes(extras.storage.usage)} de ${formatBytes(extras.storage.quota)}.`) : null,
-      extras.installAvailable ? button('Instalar aplicativo', { 'data-action': 'install-app' }) : h('p', {}, 'No Chrome do tablet, use o menu do navegador e escolha Instalar aplicativo.')
-    ),
-    h('form', { class: 'card form-grid', 'data-form': 'settings' },
-      field('Organização', input('organizationName', snapshot.settings.organizationName || '')),
-      field('Propriedade padrão', input('propertyName', snapshot.settings.propertyName || ''), 'Usada apenas para preencher novos cadastros e relatórios.'),
-      field('Responsável técnico padrão', input('technicalResponsible', snapshot.settings.technicalResponsible || '')),
-      h('button', { type: 'submit', class: 'button' }, 'Salvar preferências')
+      extras.installAvailable ? button('Instalar aplicativo', { 'data-action': 'install-app' }) : h('p', {}, 'No Chrome do tablet, use o menu do navegador e escolha Instalar aplicativo.'),
+      linkButton('Preferências', '#/configuracoes', 'button secondary')
     ),
     h('article', { class: 'card' },
       h('h2', {}, 'Backup completo'),
@@ -672,8 +679,31 @@ function templateFormPage(snapshot, draft) {
   )
 }
 
+function settingsPage(snapshot) {
+  return h('section', { class: 'screen' },
+    h('header', { class: 'screen-head' },
+      h('div', { class: 'titles' },
+        h('h1', {}, 'Configurações'),
+        h('p', { class: 'lede' }, 'Preferências salvas neste dispositivo.')
+      )
+    ),
+    h('form', { class: 'card form-grid', 'data-form': 'settings' },
+      field('Organização', input('organizationName', snapshot.settings.organizationName || '')),
+      field('Propriedade padrão', input('propertyName', snapshot.settings.propertyName || ''), 'Usada apenas para preencher novos cadastros e relatórios.'),
+      field('Responsável técnico padrão', input('technicalResponsible', snapshot.settings.technicalResponsible || '')),
+      h('div', { class: 'form-actions' }, h('button', { type: 'submit', class: 'button' }, 'Salvar preferências'))
+    ),
+    h('article', { class: 'card' },
+      h('h2', {}, 'Apagar dados deste dispositivo'),
+      h('p', {}, 'Remove máquinas, inspeções, fotografias, testes e preferências guardados neste aparelho. As categorias e os modelos padrão são recriados. Um backup já exportado continua válido se estiver guardado fora daqui.'),
+      button('Apagar todos os dados', { 'data-action': 'reset-data', class: 'button danger' })
+    )
+  )
+}
+
 function reportDocument(report, extras) {
   return h('article', { class: 'print-sheet card' },
+    h('img', { class: 'report-logo', src: `${import.meta.env.BASE_URL}logo.png`, alt: 'ASCAD Agrotecnologia' }),
     h('p', { class: 'eyebrow' }, report.organizationName),
     h('h1', {}, 'Relatório técnico'),
     facts([

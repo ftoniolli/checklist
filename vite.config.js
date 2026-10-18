@@ -53,6 +53,7 @@ export default defineConfig({
           './manifest.webmanifest',
           './icons/icon-192.png',
           './icons/icon-512.png',
+          './logo.png',
           ...assets.map((name) => `./assets/${name}`)
         ]
         writeFileSync(path.resolve('dist/sw.js'), worker(files))

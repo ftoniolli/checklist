@@ -34,22 +34,28 @@ button, input, select, textarea { font: inherit; color: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 2px solid #a1a1aa; outline-offset: 2px; }
 
-.shell { min-height: 100vh; display: grid; grid-template-columns: 248px 1fr; }
-.shell.is-collapsed { grid-template-columns: 76px 1fr; }
+.shell { min-height: 100vh; display: block; }
 
 .nav {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  bottom: 0;
+  width: 68px;
   height: 100vh;
+  overflow: hidden;
   background: var(--paper);
   color: var(--ink);
-  padding: 16px 12px;
+  padding: 16px 8px;
   display: flex;
   flex-direction: column;
   gap: 2px;
   border-right: 1px solid var(--line);
-  z-index: 5;
+  z-index: 30;
+  transition: width 120ms linear;
 }
+.nav:hover,
+.shell:not(.is-collapsed) .nav { width: 248px; }
 .brand {
   display: flex;
   align-items: center;
@@ -71,15 +77,44 @@ button, a { -webkit-tap-highlight-color: transparent; }
   border-radius: 8px;
   font-size: 0.92rem;
   font-weight: 500;
+  white-space: nowrap;
 }
 .nav a:hover { background: #f4f4f5; color: var(--ink); }
 .nav a.is-active { background: #f4f4f5; color: var(--ink); font-weight: 600; }
+.nav-label, .brand-text { white-space: nowrap; }
 .shell.is-collapsed .brand { justify-content: center; margin-inline: 0; }
 .shell.is-collapsed .brand-text,
-.shell.is-collapsed .nav-label { display: none; }
+.shell.is-collapsed .nav-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.nav:hover .brand-text,
+.nav:hover .nav-label,
+.shell:not(.is-collapsed) .brand-text,
+.shell:not(.is-collapsed) .nav-label {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+}
 .shell.is-collapsed .nav a { justify-content: center; padding-inline: 0; }
+.nav:hover a,
+.shell:not(.is-collapsed) .nav a { justify-content: flex-start; padding-inline: 10px; }
 
-.workspace { min-width: 0; }
+.workspace { min-width: 0; margin-left: 68px; }
+.shell:not(.is-collapsed) .workspace { margin-left: 248px; }
+.topbar-end { display: flex; align-items: center; gap: 8px; }
+.panel-logo, .report-logo {
+  display: block;
+  width: min(320px, 78%);
+  height: auto;
+  margin: 4px auto 20px;
+  border-radius: 12px;
+}
 .topbar {
   position: sticky;
   top: 0;
@@ -344,29 +379,7 @@ tbody tr:hover { background: #fafafa; }
 }
 
 @media (max-width: 900px) {
-  .shell, .shell.is-collapsed { display: block; }
-  .nav {
-    position: fixed;
-    z-index: 20;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    top: auto;
-    height: auto;
-    flex-direction: row;
-    overflow-x: auto;
-    padding: 8px;
-    gap: 4px;
-    border-right: 0;
-    border-top: 1px solid var(--line);
-    background: rgb(255 255 255 / 94%);
-  }
-  .brand { display: none; }
-  .shell.is-collapsed .nav-label { display: none; }
-  .shell.is-collapsed .nav { transform: translateY(110%); }
-  .nav a { min-width: max-content; font-size: 0.84rem; }
-  main { padding: 16px 16px 96px; }
-  .shell.is-collapsed main { padding-bottom: 24px; }
+  main { padding: 16px; }
   .stats, .stats-priority, .facts, .states, .form-grid { grid-template-columns: 1fr 1fr; }
   .form-grid > h2, .form-grid > .form-actions, .form-grid > .check, .form-grid .field:has(textarea) { grid-column: 1 / -1; }
   .topbar { padding: 10px 16px; }
@@ -386,6 +399,7 @@ tbody tr:hover { background: #fafafa; }
   body { background: white; }
   .nav, .topbar, .no-print, .flash { display: none !important; }
   .shell, .workspace, main { display: block; padding: 0; max-width: none; }
+  .workspace { margin-left: 0 !important; }
   .card, .stat, .list-card { box-shadow: none; }
   .print-sheet { margin: 0; }
   .screen { animation: none; }
